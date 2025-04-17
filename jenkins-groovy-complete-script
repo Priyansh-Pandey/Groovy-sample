@@ -1,0 +1,54 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "nodeaapp"
+    }
+
+    stages {
+        stage("Pull") {
+            steps {
+                echo "Pulling the code from GitHub"
+                git url: "https://github.com/Priyansh-Pandey/Djanjo-todo-CI-CD.git", branch: "master"
+            }
+        }
+
+        stage("Build") {
+            steps {
+                echo "Building the Docker image"
+                sh "docker build -t $IMAGE_NAME ."
+                echo "Build complete"
+            }
+        }
+
+        stage("Image-Scan") {
+            steps {
+                echo "Image Scan Begin"
+                sh "trivy image --severity HIGH,CRITICAL $IMAGE_NAME"
+                echo "Image Scan Complete"
+            }
+        }
+
+        stage("Push") {
+            steps {
+                echo "Pushing the image to Docker Hub"
+                withCredentials([usernamePassword(credentialsId: 'dockerHub-cred', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh """
+    echo "\$DOCKER_PASSWORD" | docker login -u "\$DOCKER_USERNAME" --password-stdin
+"""
+                    sh "docker tag $IMAGE_NAME $DOCKER_USERNAME/flask-app2:latest"
+                    sh "docker push $DOCKER_USERNAME/flask-app2:latest"
+                }
+                echo "Image has been pushed to Docker Hub"
+            }
+        }
+
+        stage("Deploy") {
+            steps {
+                echo "Deploying the app"
+                sh "docker compose down || true"
+                sh "docker compose up -d"
+            }
+        }
+    }
+}
