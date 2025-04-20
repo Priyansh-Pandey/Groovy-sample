@@ -34,10 +34,10 @@ pipeline {
                 echo "Pushing the image to Docker Hub"
                 withCredentials([usernamePassword(credentialsId: 'dockerHub-cred', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     sh """
-    echo "\$DOCKER_PASSWORD" | docker login -u "\$DOCKER_USERNAME" --password-stdin
-"""
-                    sh "docker tag $IMAGE_NAME $DOCKER_USERNAME/flask-app2:latest"
-                    sh "docker push $DOCKER_USERNAME/flask-app2:latest"
+                        echo "\$DOCKER_PASSWORD" | docker login -u "\$DOCKER_USERNAME" --password-stdin
+                    """
+                    sh "docker tag $IMAGE_NAME \$DOCKER_USERNAME/flask-app2:latest"
+                    sh "docker push \$DOCKER_USERNAME/flask-app2:latest"
                     sh "docker rmi $IMAGE_NAME || true"
                 }
                 echo "Image has been pushed to Docker Hub"
@@ -49,6 +49,14 @@ pipeline {
                 echo "Deploying the app"
                 sh "docker compose down || true"
                 sh "docker compose up -d"
+            }
+        }
+
+        stage("Cleanup Old Images") {
+            steps {
+                echo "Removing old/dangling Docker images"
+                sh "docker image prune -f"
+                sh "docker rmi -f \$DOCKER_USERNAME/flask-app2:latest || true"
             }
         }
     }
