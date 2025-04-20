@@ -38,6 +38,7 @@ pipeline {
 """
                     sh "docker tag $IMAGE_NAME $DOCKER_USERNAME/flask-app2:latest"
                     sh "docker push $DOCKER_USERNAME/flask-app2:latest"
+                    sh "docker rmi $IMAGE_NAME || true"
                 }
                 echo "Image has been pushed to Docker Hub"
             }
